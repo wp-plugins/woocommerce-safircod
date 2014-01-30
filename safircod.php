@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.0
+Version: 1.1
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -20,7 +20,7 @@ GNU General Public License for more details.
 
 function activate_WC_SafirCOD_plugin()
 {
-    wp_schedule_event(time(), 'twicedaily', 'update_safir_orders_state');
+    wp_schedule_event(time(), 'hourly', 'update_safir_orders_state');
 } 
 register_activation_hook(__FILE__, 'activate_WC_SafirCOD_plugin');
 
@@ -688,10 +688,6 @@ class WC_SafirCOD {
      public function __construct() 
      {
         add_action( 'woocommerce_order_status_on-hold', array( $this, 'save_order'), 10, 1);
-        add_action( 'woocommerce_product_options_sku', array( $this, 'add_safir_id_filed'));
-        add_action( 'woocommerce_process_product_meta_simple', array( $this, 'save_safir_id_field'));
-        add_action( 'woocommerce_process_product_meta_variable', array( $this, 'save_safir_id_field'));
-        add_action( 'woocommerce_process_product_meta_external', array( $this, 'save_safir_id_field'));
         
         add_action( 'woocommerce_cart_collaterals', array( $this, 'remove_shipping_calculator'));
         add_action( 'woocommerce_calculated_shipping', array( $this, 'set_state_and_city_in_cart_page'));
@@ -776,9 +772,9 @@ class WC_SafirCOD {
 
 				if ($item['product_id']>0) {
 					$_product = $order->get_product_from_item( $item );
-                    $ID = $_product->id;
-                    $id_safir = get_post_meta( $ID, '_safir_id', true);
-                    $orders .= $id_safir.'^';
+                    $productName = str_ireplace('^', '', $_product->title);
+                    $productName = str_ireplace(';', '', $productName);
+                    $orders .= $productName.'^';
                     $orders .= intval($_product->weight * $unit).'^';
                     $orders .= (int)$item['qty'].'^';
                     $price  = $order->get_item_total( $item); 
@@ -921,19 +917,6 @@ class WC_SafirCOD {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return $ip;
-    }
-    
-    public function add_safir_id_filed()
-    {
-        global $thepostid;
-        
-        woocommerce_wp_text_input( array( 'id' => '_safir_id', 'label' => '<abbr title="'. __( 'کد کالا در سیستم سفیر', 'woocommerce' ) .'">' . __( 'کد سفیر', 'woocommerce' ) . '</abbr>', 'desc_tip' => 'true', 'description' => __( 'کالا را در سیستم سفیر ثبت کنید و سپس کد آن را در این فیلد وارد نمایید', 'woocommerce' ) ) );
-    }
-    
-    
-    public function save_safir_id_field($id)
-    {
-        update_post_meta( $id, '_safir_id', $_POST['_safir_id'] );
     }
     
     public function remove_shipping_calculator()
