@@ -3,7 +3,7 @@ Contributors: Domanjiri
 Tags: safir,cod, woocommerce, shop, safircod, post, cash on delivery, iran, iranian, persian, woo commerce, ecommerce, e-commerce, shipping, farsi
 Requires at least: 3.6
 Tested up to: 3.8
-Stable tag: 1.0
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,10 +76,12 @@ Visit  [safircod ](http://safircod.com) for more information.
 
 1. shipping method
 2. setting
-3. add product
-4. calc shipping cost in cart
+3. calc shipping cost in cart
 
 == Changelog ==
+
+= 1.1 =
+compatible with with new version of safir webservice
 
 = 1.0 =
 * Just launch..
