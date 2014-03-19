@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.2
+Version: 1.2.1
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -387,6 +387,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         
                       function safir_service() 
                       {
+                        // webservice dont responsible!
+                         return 6000; 
                          global $woocommerce;
             
                          $cache_data = get_transient('safir_cod_service_price');
