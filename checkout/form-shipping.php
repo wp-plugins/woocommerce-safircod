@@ -54,29 +54,29 @@ global $woocommerce;
                         </select>-->
             </p>
 		
-			<p class="form-row form-row-first validate-required" id="shipping_first_name_field"><label for="shipping_first_name" class="">نام <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_first_name" id="shipping_first_name" placeholder="" value="">
+			<p class="form-row form-row-first validate-required" id="shipping_first_name_field"><label for="shipping_first_name" class="">نام <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_first_name" id="shipping_first_name" placeholder="" value="<?php echo $checkout->get_value( 'shipping_first_name' ) ?>">
 				</p>
 		
-			<p class="form-row form-row-last validate-required" id="shipping_last_name_field"><label for="shipping_last_name" class="">نام خانوادگی <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_last_name" id="shipping_last_name" placeholder="" value="">
+			<p class="form-row form-row-last validate-required" id="shipping_last_name_field"><label for="shipping_last_name" class="">نام خانوادگی <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_last_name" id="shipping_last_name" placeholder="" value="<?php echo $checkout->get_value( 'shipping_last_name' ) ?>">
 				</p><div class="clear"></div>
 		
-			<p class="form-row form-row-wide woocommerce-validated" id="shipping_company_field"><label for="shipping_company" class="">نام شرکت</label><input type="text" class="input-text" name="shipping_company" id="shipping_company" placeholder="" value="">
+			<p class="form-row form-row-wide woocommerce-validated" id="shipping_company_field"><label for="shipping_company" class="">نام شرکت</label><input type="text" class="input-text" name="shipping_company" id="shipping_company" placeholder="" value="<?php echo $checkout->get_value( 'shipping_company' ) ?>">
 				</p>
             <style>
                 select{font:12px tahoma; padding: 2px 1px;}
             </style>
             
-            <input type="hidden" name="shipping_state" id="shipping_state" value="<?php echo is_string($checkout->get_value('shipping_state')) ? $checkout->get_value('shipping_state') : $woocommerce->customer->get_shipping_state(); ?>" />
+            <input type="hidden" name="shipping_state" id="shipping_state" value="<?php echo $woocommerce->customer->get_shipping_state();/*is_string($checkout->get_value('shipping_state')) ? $checkout->get_value('shipping_state') : */ ?>" />
             <input type="hidden" name="shipping_city" id="shipping_city" value="<?php echo $woocommerce->customer->get_shipping_city() ?>" />
             
 		
-			<p class="form-row form-row-wide validate-required" id="shipping_address_1_field"><label for="shipping_address_1" class="">آدرس <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_address_1" id="shipping_address_1" placeholder="خیابان" value="" autocomplete="no">
+			<p class="form-row form-row-wide validate-required" id="shipping_address_1_field"><label for="shipping_address_1" class="">آدرس <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_address_1" id="shipping_address_1" placeholder="خیابان" value="<?php echo $checkout->get_value( 'shipping_address_1' ) ?>" autocomplete="no">
 				</p>
 		
-			<p class="form-row form-row-wide" id="shipping_address_2_field"><input type="text" class="input-text" name="shipping_address_2" id="shipping_address_2" placeholder="شماره پلاک، واحد، بلوک " value="" autocomplete="no">
+			<p class="form-row form-row-wide" id="shipping_address_2_field"><input type="text" class="input-text" name="shipping_address_2" id="shipping_address_2" placeholder="شماره پلاک، واحد، بلوک " value="<?php echo $checkout->get_value( 'shipping_address_2' ) ?>" autocomplete="no">
 				</p>
 
-			<p class="form-row form-row-wide validate-required" id="shipping_postcode_field" data-o_class="form-row form-row-wide address-field validate-required"><label for="shipping_postcode" class="">کدپستی <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_postcode" id="shipping_postcode" placeholder="کدپستی" value="" autocomplete="no">
+			<p class="form-row form-row-wide validate-required" id="shipping_postcode_field" data-o_class="form-row form-row-wide address-field validate-required"><label for="shipping_postcode" class="">کدپستی <abbr class="required" title="ضروری">*</abbr></label><input type="text" class="input-text" name="shipping_postcode" id="shipping_postcode" placeholder="کدپستی" value="<?php echo $checkout->get_value( 'shipping_postcode' ) ?>" autocomplete="no">
 				</p>
 		
 			<div class="clear"></div>
