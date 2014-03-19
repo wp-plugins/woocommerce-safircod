@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.1
+Version: 1.2
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -36,8 +36,10 @@ register_deactivation_hook(__FILE__, 'deactivate_WC_SafirCOD_plugin');
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
  
 	function safircod_shipping_method_init() {
-
-		    include_once(plugin_dir_path(__FILE__) . 'lib/nusoap/nusoap.php');
+            if(!class_exists('nusoap_client')) { // edit @ 02 14
+                include_once(plugin_dir_path(__FILE__) . 'lib/nusoap/nusoap.php');
+            }
+		    
             // 
             date_default_timezone_set('Asia/Tehran');
             ini_set('default_socket_timeout', 160);
@@ -317,7 +319,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					           $this->debug_file->write('@get_shipping_response::everything is Ok:'.$text);
 				            }
                 
-                            $rates = $result;//*1.06);
+                            $rates = intval($result)*1.06;
 
 				            $cache_data['shipping_data']        = $shipping_data;
 				            $cache_data['cart_hash']            = $cart_hash;
@@ -592,7 +594,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
  
                 public function calculate_shipping( $package ) 
                 {
-    	                   global $woocommerce;
+                           global $woocommerce;
 		                   $customer = $woocommerce->customer;
 
                            if( empty($package['destination']['city'])) {
@@ -687,8 +689,13 @@ class WC_SafirCOD {
     
      public function __construct() 
      {
-        add_action( 'woocommerce_order_status_on-hold', array( $this, 'save_order'), 10, 1);
+        // edit @ 02 14
+        //if (version_compare(WOOCOMMERCE_VERSION, '2.1.0', '>='))
+        //add_action( 'woocommerce_order_status_processing', array( $this, 'save_order'), 10, 1);
+        //add_action( 'woocommerce_order_status_on-hold', array( $this, 'save_order'), 10, 1);
+        add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_order'), 10, 2);
         
+        add_action('woocommerce_before_checkout_form', array( $this, 'calc_shipping_after_login'));
         add_action( 'woocommerce_cart_collaterals', array( $this, 'remove_shipping_calculator'));
         add_action( 'woocommerce_calculated_shipping', array( $this, 'set_state_and_city_in_cart_page'));
         add_action( 'woocommerce_cart_collaterals', array( $this, 'add_new_calculator'));
@@ -696,11 +703,11 @@ class WC_SafirCOD {
         add_action( 'woocommerce_cart_totals_after_order_total', array( $this, 'add_proceed_btn'));
         
         add_filter( 'woocommerce_available_payment_gateways', array( $this, 'get_available_payment_gateways'), 10, 1);
-        add_filter( 'woocommerce_locate_template', array( $this, 'new_template'), 10, 3);
+        add_filter( 'woocommerce_locate_template', array( $this, 'new_template'), 50, 3); // edit @ 02 14
         add_filter( 'woocommerce_cart_shipping_method_full_label', array( $this, 'remove_free_text'), 10, 2);
         add_filter( 'woocommerce_default_address_fields', array( $this, 'remove_country_field'), 10, 1);
         add_action( 'woocommerce_admin_css', array( $this, 'add_css_file'));
-        add_Action ('admin_enqueue_scripts', array( $this, 'overriade_js_file'), 11);
+        add_action('admin_enqueue_scripts', array( $this, 'overriade_js_file'), 11);
         
         add_action( 'update_safir_orders_state', array( $this, 'update_safir_orders_state'));
         
@@ -736,8 +743,10 @@ class WC_SafirCOD {
         global $woocommerce;
         
         $shipping_method = $woocommerce->session->chosen_shipping_method;
+        /*
+        @ edit 02 14
         if(!in_array( $shipping_method, array('safircod_pishtaz' ,'safircod_sefareshi' )))
-            return $template;
+            return $template;*/
         
         if( $template_name =='checkout/form-billing.php' OR $template_name =='checkout/form-shipping.php')
             return untrailingslashit( plugin_dir_path( __FILE__ ) ). '/'. $template_name;
@@ -745,21 +754,40 @@ class WC_SafirCOD {
         return $template;
     }
     
-    public function save_order($id)
+    public function save_order($id, $posted)
     {
         global $woocommerce;
-    
+
         $this->email_handle =  $woocommerce->mailer();
       
         $order = new WC_Order($id);
         if(!is_object($order))
             return;
-        
-        if( !in_array($order->shipping_method, array('safircod_pishtaz' ,'safircod_sefareshi' )) || $order->payment_method != 'cod' )
-            return;
             
+        // edit @ 02 14   
+        $is_safir = false; 
+        if ( $order->shipping_method ) {
+            if( in_array($order->shipping_method, array('safircod_pishtaz' ,'safircod_sefareshi' )) ) {
+                $is_safir = true;
+                $shipping_methods = $order->shipping_method;
+            }
+            
+		} else {
+            $shipping_s = $order->get_shipping_methods();
+
+			foreach ( $shipping_s as $shipping ) {
+			    if( in_array($shipping['method_id'], array('safircod_pishtaz' ,'safircod_sefareshi' )) ) {
+                    $is_safir = true;
+                    $shipping_methods = $shipping['method_id'];
+                    break;
+                }
+			}
+        }
+        if( !$is_safir || $order->payment_method != 'cod' )
+            return;
+           
         $this->safir_carrier      = new WC_Safircod_Pishtaz_Method();
-        $service_type             = ($order->shipping_method == 'safircod_pishtaz') ? 1 : 0;
+        $service_type             = ($shipping_methods == 'safircod_pishtaz') ? 1 : 0;
         if($this->safir_carrier->debug){
            $this->debug_file = new WC_SafirCOD_Debug();
            $this->debug_file->sep();
@@ -772,7 +800,7 @@ class WC_SafirCOD {
 
 				if ($item['product_id']>0) {
 					$_product = $order->get_product_from_item( $item );
-                    $productName = str_ireplace('^', '', $_product->title);
+                    $productName = str_ireplace('^', '', $_product->get_title()); // edit @ 02 14
                     $productName = str_ireplace(';', '', $productName);
                     $orders .= $productName.'^';
                     $orders .= intval($_product->weight * $unit).'^';
@@ -902,6 +930,24 @@ class WC_SafirCOD {
         }
 	}
     
+    public function calc_shipping_after_login( $checkout ) 
+    {
+        global $woocommerce;
+        
+        $state 		= $woocommerce->customer->get_shipping_state() ;
+		$city       = $woocommerce->customer->get_shipping_city() ;
+        
+        if( $state && $city ) {
+            $woocommerce->customer->calculated_shipping( true );
+        } else {
+  
+            wc_add_notice( 'پیش از وارد کردن مشخصات و آدرس، لازم است استان و شهر خود را مشخص کنید.');
+            $cart_page_id 	= get_option('woocommerce_cart_page_id' );//wc_get_page_id( 'cart' );
+			wp_redirect( get_permalink( $cart_page_id ) );
+        }
+
+    }
+    
     public function getIp()
     {
         if (!empty($_SERVER['HTTP_CLIENT_IP']))
@@ -967,9 +1013,9 @@ class WC_SafirCOD {
     public function set_state_and_city_in_cart_page()
     {
         global $woocommerce;
-        
-        $state 		= (woocommerce_clean( $_POST['calc_shipping_state'] )) ? woocommerce_clean( $_POST['calc_shipping_state'] ) : $woocommerce->customer->get_state() ;
-		$city       = (woocommerce_clean( $_POST['calc_shipping_city'] )) ? woocommerce_clean( $_POST['calc_shipping_city'] ) : $woocommerce->customer->get_city() ;
+        // edit @ 02 14
+        $state 		= (woocommerce_clean( $_POST['calc_shipping_state'] )) ? woocommerce_clean( $_POST['calc_shipping_state'] ) : $woocommerce->customer->get_shipping_state() ;
+		$city       = (woocommerce_clean( $_POST['calc_shipping_city'] )) ? woocommerce_clean( $_POST['calc_shipping_city'] ) : $woocommerce->customer->get_shipping_city() ;
 
         if ( $city && $state) {
 				$woocommerce->customer->set_location( 'IR', $state, '', $city );
@@ -1079,14 +1125,14 @@ class WC_SafirCOD {
             
             $status = false;
             switch($res[1]) {
-                case '0': // سفارش جدید
+                /*case '0': // سفارش جدید
                        $status = 'pending';
-                       break; 
+                       break; */
                 case '1': // آماده به ارسال
                 case '2': // ارسال شده
                 case '3':  //توزیع شده
-                       $status = 'processing';
-                       break; 
+                       /*$status = 'processing';
+                       break; */
                 case '4': // وصول شده
                        $status = 'completed';
                        break; 
