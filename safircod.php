@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.2.1
+Version: 1.3
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -319,7 +319,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					           $this->debug_file->write('@get_shipping_response::everything is Ok:'.$text);
 				            }
                 
-                            $rates = intval($result)*1.06;
+                            $rates = intval($result)*1.08;
 
 				            $cache_data['shipping_data']        = $shipping_data;
 				            $cache_data['cart_hash']            = $cart_hash;
@@ -716,12 +716,35 @@ class WC_SafirCOD {
         add_filter( 'woocommerce_currencies', array( $this, 'check_currency'), 20 );
         add_filter('woocommerce_currency_symbol', array( $this, 'check_currency_symbol'), 20, 2);
         
-        
+        add_filter('woocommerce_states', array( $this, 'woocommerce_states'));
+        add_action( 'woocommerce_thankyou', array( $this, 'show_invoice'), 5 );
+                        
         if(!class_exists('WC_Safircod_Pishtaz_Method') && function_exists('safircod_shipping_method_init') && class_exists('WC_Shipping_Method'))
             safircod_shipping_method_init();
         
     }
     
+    public function woocommerce_states($st) 
+    {
+        return false;
+    }        
+    
+    public function show_invoice( $order_id )
+    {
+        $factor = get_post_meta( $order_id, '_safir_tracking_code', true);
+        
+        if( empty($factor))
+            return;
+        $html = '<p>';
+        $html .= 'کد رهگیری سفارش شما.';
+        $html .= '</br>';
+        $html .= 'این کد را نزد خود نگه‌دارید و با مراجعه به سایت پست از وضعیت سفارش خود آگاه شوید. ';
+        $html .= '</br>'. $factor .'</p><div class="clear"></div>';
+        
+        echo $html;
+        return;
+    }
+       
     public function get_available_payment_gateways( $_available_gateways)
     {
         global $woocommerce;
