@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.3
+Version: 1.3.1
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -700,7 +700,7 @@ class WC_SafirCOD {
         add_action('woocommerce_before_checkout_form', array( $this, 'calc_shipping_after_login'));
         add_action( 'woocommerce_cart_collaterals', array( $this, 'remove_shipping_calculator'));
         add_action( 'woocommerce_calculated_shipping', array( $this, 'set_state_and_city_in_cart_page'));
-        add_action( 'woocommerce_cart_collaterals', array( $this, 'add_new_calculator'));
+        add_action( 'woocommerce_cart_collaterals', array( $this, 'add_new_calculator'), 20);
         add_action( 'woocommerce_before_cart', array( $this, 'remove_proceed_btn'));
         add_action( 'woocommerce_cart_totals_after_order_total', array( $this, 'add_proceed_btn'));
         
