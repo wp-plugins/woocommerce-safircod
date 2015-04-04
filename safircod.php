@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce SafirCOD
 Plugin URI: http://safircod.ir/
 Description: This plugin integrates <strong>SafirCOD</strong> service with WooCommerce.
-Version: 1.3.1
+Version: 1.4
 Author: Domanjiri
 Text Domain: safircod
 Domain Path: /lang/
@@ -52,7 +52,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         var $wsdl_url       = "http://ws.safircod.ir/userservice.asmx?WSDL";
                         var $username       = "";
                         var $password       = "";
-                        var $debug          = 0;
+                        var $debug          = 1;
                         var $w_unit         = "";
                         var $debug_file     = "";
                         var $client         = null;
@@ -74,7 +74,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     
                            $this->enabled		= $this->get_option( 'enabled' );
 		                   $this->title 		= $this->get_option( 'title' );
-		                   $this->min_amount 	= $this->get_option( 'min_amount', 0 );
+		                   $this->minimum_fee 	= $this->get_option( 'min_amount', 0 );
                            $this->w_unit 	    = strtolower( get_option('woocommerce_weight_unit') );
                     
 					       // Save settings in admin if you have any defined
@@ -92,7 +92,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         {
    	                        global $woocommerce;
 
-		                    if ( $this->min_amount )
+		                    if ( $this->minimum_fee )
 		                     	$default_requires = 'min_amount';
 
 
@@ -178,7 +178,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		                      	else
 				                        $total = $woocommerce->cart->cart_contents_total;
 
-			                    if ( $total >= $this->min_amount )
+			                    if ( $total >= $this->minimum_fee )
 				                        $has_met_min_amount = true;
 		                   }
 
@@ -319,7 +319,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					           $this->debug_file->write('@get_shipping_response::everything is Ok:'.$text);
 				            }
                 
-                            $rates = intval($result)*1.08;
+                            $rates = intval($result)*1.09;
 
 				            $cache_data['shipping_data']        = $shipping_data;
 				            $cache_data['cart_hash']            = $cart_hash;
@@ -354,18 +354,18 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                           if ($this->debug) {
                               $this->debug_file->write('@safir_shipping::here is top of function');
                           }
-			
+                          
                           $this->client                      = new nusoap_client( $this->wsdl_url, true );
                           $this->client->soap_defencoding    = 'UTF-8';
                           $this->client->decode_utf8         = true;
             
                           $response                          = $this->call("GetPostCost", $data);
             
-                          if(is_array($response) && $response['error']){
+                          if(is_array($response) && !empty($response['error'])){
                               if ($this->debug) {
                                     $this->debug_file->write('@safir_service::'.$response['message']);
-							        $woocommerce->clear_messages();
-							        $woocommerce->add_message('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
+							        wc_clear_notices();
+							        wc_add_notice('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
 				              }
                 
                               return 30000;
@@ -411,8 +411,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                          if(is_array($response) && $response['error']){
                              if ($this->debug) {
                                         $this->debug_file->write('@safir_service::'.$response['message']);
-		             					$woocommerce->clear_messages();
-		             					$woocommerce->add_message('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
+		             					wc_clear_notices();
+		             					wc_add_notice('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
 			             	}
                 
                             return 7000; // estimated
@@ -529,7 +529,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
  
 					$this->enabled		= $this->get_option( 'enabled' );
 		            $this->title 		= $this->get_option( 'title' );
-		            $this->min_amount 	= $this->get_option( 'min_amount', 0 );
+		            $this->minimum_fee 	= $this->get_option( 'min_amount', 0 );
                     $this->w_unit      = strtolower( get_option('woocommerce_weight_unit') );
  
 					// Save settings in admin if you have any defined
@@ -547,7 +547,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 {
     	            global $woocommerce;
 
-		              if ( $this->min_amount )
+		              if ( $this->minimum_fee )
 		          	$default_requires = 'min_amount';
 
 
@@ -691,23 +691,17 @@ class WC_SafirCOD {
     
      public function __construct() 
      {
+        //global $woocommerce;
         // edit @ 02 14
         //if (version_compare(WOOCOMMERCE_VERSION, '2.1.0', '>='))
         //add_action( 'woocommerce_order_status_processing', array( $this, 'save_order'), 10, 1);
         //add_action( 'woocommerce_order_status_on-hold', array( $this, 'save_order'), 10, 1);
         add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_order'), 10, 2);
         
-        add_action('woocommerce_before_checkout_form', array( $this, 'calc_shipping_after_login'));
-        add_action( 'woocommerce_cart_collaterals', array( $this, 'remove_shipping_calculator'));
-        add_action( 'woocommerce_calculated_shipping', array( $this, 'set_state_and_city_in_cart_page'));
-        add_action( 'woocommerce_cart_collaterals', array( $this, 'add_new_calculator'), 20);
-        add_action( 'woocommerce_before_cart', array( $this, 'remove_proceed_btn'));
-        add_action( 'woocommerce_cart_totals_after_order_total', array( $this, 'add_proceed_btn'));
-        
         add_filter( 'woocommerce_available_payment_gateways', array( $this, 'get_available_payment_gateways'), 10, 1);
-        add_filter( 'woocommerce_locate_template', array( $this, 'new_template'), 50, 3); // edit @ 02 14
+        
         add_filter( 'woocommerce_cart_shipping_method_full_label', array( $this, 'remove_free_text'), 10, 2);
-        add_filter( 'woocommerce_default_address_fields', array( $this, 'remove_country_field'), 10, 1);
+        
         add_action( 'woocommerce_admin_css', array( $this, 'add_css_file'));
         add_action('admin_enqueue_scripts', array( $this, 'overriade_js_file'), 11);
         
@@ -718,7 +712,21 @@ class WC_SafirCOD {
         
         add_filter('woocommerce_states', array( $this, 'woocommerce_states'));
         add_action( 'woocommerce_thankyou', array( $this, 'show_invoice'), 5 );
-                        
+        
+        add_filter( 'woocommerce_default_address_fields', array( $this, 'remove_country_field'), 10, 1);
+        
+        //if(is_object($woocommerce->cart))
+        //if($woocommerce->cart->needs_shipping()) {
+            add_action('woocommerce_before_checkout_form', array( $this, 'calc_shipping_after_login'));
+            add_action( 'woocommerce_cart_collaterals', array( $this, 'remove_shipping_calculator'));
+            add_action( 'woocommerce_calculated_shipping', array( $this, 'set_state_and_city_in_cart_page'));
+            add_action( 'woocommerce_cart_collaterals', array( $this, 'add_new_calculator'), 20);
+            add_action( 'woocommerce_before_cart', array( $this, 'remove_proceed_btn'));
+            add_action( 'woocommerce_cart_totals_after_order_total', array( $this, 'add_proceed_btn'));
+            
+            add_filter( 'woocommerce_locate_template', array( $this, 'new_template'), 50, 3); // edit @ 02 14
+            
+        //}             
         if(!class_exists('WC_Safircod_Pishtaz_Method') && function_exists('safircod_shipping_method_init') && class_exists('WC_Shipping_Method'))
             safircod_shipping_method_init();
         
@@ -767,6 +775,9 @@ class WC_SafirCOD {
     {
         global $woocommerce;
         
+        if(!$woocommerce->cart->needs_shipping())
+            return $template;
+            
         $shipping_method = $woocommerce->session->chosen_shipping_method;
         /*
         @ edit 02 14
@@ -884,8 +895,8 @@ class WC_SafirCOD {
             
             if ($this->safir_carrier->debug) {
                             $this->debug_file->write('@save_order::everything is Ok');
-							$woocommerce->clear_messages();
-							$woocommerce->add_message('<p>Safir:</p> <p>Everthing is Ok!</p>');
+							wc_clear_notices();
+							wc_add_notice('<p>Safir:</p> <p>Everthing is Ok!</p>');
 			}
             $this->trigger($order->id, $order, true);
             update_post_meta($id, '_safir_tracking_code', $response->RegisterNewOrderResult);
@@ -914,8 +925,8 @@ class WC_SafirCOD {
         if(is_array($response) && $response['error']){
             if ($this->safir_carrier->debug) {
                             $this->debug_file->write('@safir_service::'.$response['message']);
-							$woocommerce->clear_messages();
-							$woocommerce->add_message('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
+							wc_clear_notices();
+							wc_add_notice('<p>Safir Error:</p> <p>'.$response['message'].'</p>');
 				}
                 mkobject($response);
                 return array(false, $this->safir_carrier->handleError($response->RegisterNewOrderResult,'register'));
@@ -959,6 +970,9 @@ class WC_SafirCOD {
     {
         global $woocommerce;
         
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+            
         $state 		= $woocommerce->customer->get_shipping_state() ;
 		$city       = $woocommerce->customer->get_shipping_city() ;
         
@@ -992,6 +1006,11 @@ class WC_SafirCOD {
     
     public function remove_shipping_calculator()
     {
+        global $woocommerce;
+        
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+            
         if( get_option('woocommerce_enable_shipping_calc')!='no' )
             update_option('woocommerce_enable_shipping_calc', 'no');
     }
@@ -1038,6 +1057,10 @@ class WC_SafirCOD {
     public function set_state_and_city_in_cart_page()
     {
         global $woocommerce;
+        
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+            
         // edit @ 02 14
         $state 		= (woocommerce_clean( $_POST['calc_shipping_state'] )) ? woocommerce_clean( $_POST['calc_shipping_state'] ) : $woocommerce->customer->get_shipping_state() ;
 		$city       = (woocommerce_clean( $_POST['calc_shipping_city'] )) ? woocommerce_clean( $_POST['calc_shipping_city'] ) : $woocommerce->customer->get_shipping_city() ;
@@ -1046,7 +1069,7 @@ class WC_SafirCOD {
 				$woocommerce->customer->set_location( 'IR', $state, '', $city );
 				$woocommerce->customer->set_shipping_location( 'IR', $state, '', $city );
 			}else{
-                $woocommerce->clear_messages();
+                wc_clear_notices();
                 $woocommerce->add_error('استان و شهر را انتخاب کنید. انتخاب هر دو فیلد الزامی است.');
 			}
     }
@@ -1055,6 +1078,9 @@ class WC_SafirCOD {
     {
         global $woocommerce;
         
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+            
         $have_city = true;
         if( ! $woocommerce->customer->get_shipping_city()){
             echo '<style> div.cart_totals{display:none!important;}
@@ -1069,6 +1095,11 @@ class WC_SafirCOD {
     
     public function remove_proceed_btn()
     {
+        global $woocommerce;
+        
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+            
         echo '<style>input.checkout-button{ display:none!important;}
                     .woocommerce .cart-collaterals .cart_totals table, .woocommerce-page .cart-collaterals .cart_totals table { border:0px; }
               </style>';
@@ -1076,7 +1107,11 @@ class WC_SafirCOD {
     
     public function add_proceed_btn()
     {
+        global $woocommerce;
         
+        if(!$woocommerce->cart->needs_shipping())
+            return;
+               
         echo '<tr style="border:0px;"><td colspan="2" style="padding:15px 0px;border:0px;">
               <input onclick="submitchform();" type="submit" style="padding:10px 15px;" class="button alt" id="temp_proceed" name="temp_proceed" value=" &rarr; اتمام خرید و وارد کردن آدرس و مشخصات" />
               </td></tr>';

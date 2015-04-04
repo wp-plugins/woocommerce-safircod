@@ -2957,7 +2957,7 @@ jQuery(document).ready(function($) {
 
 		<p><button type="submit" name="calc_shipping" value="1" class="button" style="width: 60%;"><?php echo $have_city ? 'محاسبه مجدد جمع کل' : 'محاسبه جمع کل'; ?></button></p>
 
-		<?php $woocommerce->nonce_field('cart') ?>
+		<?php wp_nonce_field( 'woocommerce-cart' ); ?>
 	</section>
 </form>
 
