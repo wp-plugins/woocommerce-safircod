@@ -52,7 +52,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         var $wsdl_url       = "http://ws.safircod.ir/userservice.asmx?WSDL";
                         var $username       = "";
                         var $password       = "";
-                        var $debug          = 1;
+                        var $debug          = 0;
                         var $w_unit         = "";
                         var $debug_file     = "";
                         var $client         = null;
